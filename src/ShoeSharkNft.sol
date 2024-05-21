@@ -21,41 +21,44 @@
 // view & pure functions
 pragma solidity ^0.8.20;
 
-import {ERC721URIStorage, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 
-contract ShoeSharkNft is ERC721URIStorage {
+contract ShoeSharkNft is ERC721, ERC721Enumerable, ERC721URIStorage {
     /////////////////
     /// Errors //////
     /////////////////
-    error ShoeSharkNft__TokenUriNotFound();
-    error ShoeSharkNft__IsMintingFalse();
-    error ShoeSharkNft__TokenIdOverflow();
-    error ShoeSharkNft__InvalidMintCost();
-    error ShoeSharkNft__OnlyOwner();
-    error ShoeSharkNft__OnlyBurnByTokenOwner();
-    error ShoeSharkNft__BalanceIsZeroWhenWithdrawing();
-    error ShoeSharkNft__NotInWhitelist();
-    error ShoeSharkNft__WithdrawFailed();
-    error ShoeSharkNft__HasMinted();
+    error ShoeSharkNft__tokenURI__TokenUriNotFound();
+    error ShoeSharkNft__mint__MintingIsNotAllowed();
+    error ShoeSharkNft__mint__TokenIdOverflow();
+    error ShoeSharkNft__mintWhitelist__InvalidMintCost();
+    error ShoeSharkNft__byOwner__OnlyOwner();
+    error ShoeSharkNft__burn__OnlyBurnByTokenOwner();
+    error ShoeSharkNft__withdraw__BalanceIsZeroWhenWithdrawing();
+    error ShoeSharkNft__mintWhitelist__NotInWhitelist();
+    error ShoeSharkNft__withdraw__WithdrawFailed();
+    error ShoeSharkNft__mintWhitelist__HasMinted();
+    error ShoeSharkNft__mintWhitelist__TransferFaild();
 
     /////////////////////////
     /// State variables /////
     /////////////////////////
     address private s_owner;
     uint256 private s_tokenCounter;
-    mapping(uint256 tokenId => string tokenUri) private s_tokenIdToUri;
-    mapping(address => bool) public hasMinted;   // Mapping from address to whether it has minted
+    //mapping(uint256 tokenId => string tokenUri) private s_tokenIdToUri;
+    mapping(address => bool) public s_HasMinted;   // Mapping from address to whether it has minted
     uint256 s_MintMaxTotal = 100;
-    uint256 s_MintOneCost = 10000 wei;
+    uint256 s_MintOneCost = 1;
     // bool to check if minting is allowed
     bool s_IsMinting = true;
     string private s_MetadataUri;
     string private s_MetadataUriSuffix;
     bytes32 immutable public s_root; // MerkleTree root
-
 
 
     /////////////////////////
@@ -70,7 +73,7 @@ contract ShoeSharkNft is ERC721URIStorage {
     /////////////////////////
     modifier byOwner() {
         if (msg.sender != s_owner) {
-            revert ShoeSharkNft__OnlyOwner();
+            revert ShoeSharkNft__byOwner__OnlyOwner();
         }
         _;
     }
@@ -78,7 +81,7 @@ contract ShoeSharkNft is ERC721URIStorage {
     /////////////////////////
     ///     Functions     ///
     /////////////////////////
-    constructor(bytes32 merkleroot,string memory metadataUri) ERC721("ShoeShark", "SHRK") {
+    constructor(bytes32 merkleroot,string memory metadataUri,address tokenAddress) ERC721("ShoeShark", "SHRK") {
         s_owner = msg.sender;
         // start tokenIds at 1, its more gas efficient
         s_tokenCounter++;
@@ -90,18 +93,16 @@ contract ShoeSharkNft is ERC721URIStorage {
     ///     External      ///
     /////////////////////////
  
-    function mintWhitelist(address player, bytes32[] memory proof) external payable {
-        if(hasMinted[msg.sender]){
-            revert ShoeSharkNft__HasMinted();
+    function mintWhitelist(address player, bytes32[] memory proof) external  {
+        if(s_HasMinted[player]){
+            revert ShoeSharkNft__mintWhitelist__HasMinted();
         }
-        if (msg.value < s_MintOneCost) {
-            revert ShoeSharkNft__InvalidMintCost();
-        }   
+      
         if(!isWhitelist(proof, keccak256(abi.encodePacked(player)))){
-           revert ShoeSharkNft__NotInWhitelist();
+           revert ShoeSharkNft__mintWhitelist__NotInWhitelist();
         }
         _mint(player);
-        hasMinted[msg.sender] = true;
+        s_HasMinted[player] = true;
         
     }
 
@@ -125,23 +126,32 @@ contract ShoeSharkNft is ERC721URIStorage {
     function getTokenCounter() public view returns (uint256) {
         return s_tokenCounter;
     }
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+    //openzeppelin ERC721URIStorage
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         if (ownerOf(tokenId) == address(0)) {
-            revert ShoeSharkNft__TokenUriNotFound();
+            revert ShoeSharkNft__tokenURI__TokenUriNotFound();
         }
-        return s_tokenIdToUri[tokenId];
+        return super.tokenURI(tokenId);
     }
-  
+    //openzeppelin ERC721Enumerable
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721Enumerable, ERC721URIStorage)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
     /////////////////////////
     ///    Public byOwner ///
     /////////////////////////
     function withdraw() external payable byOwner() {
         if (address(this).balance == 0) {
-            revert ShoeSharkNft__BalanceIsZeroWhenWithdrawing();
+            revert ShoeSharkNft__withdraw__BalanceIsZeroWhenWithdrawing();
         }
         (bool sussess, ) = payable(msg.sender).call{value: address(this).balance}("");
         if (!sussess) {
-            revert ShoeSharkNft__WithdrawFailed();
+            revert ShoeSharkNft__withdraw__WithdrawFailed();
         }
         emit ShoeSharkNft_Withdraw();
     }
@@ -161,19 +171,38 @@ contract ShoeSharkNft is ERC721URIStorage {
         s_MintMaxTotal = count;
     } 
 
-
     /**
       Only allow the s_owner of the token to burn it
      */
     function burn(uint256 tokenId) public {
         if (msg.sender != ownerOf(tokenId)) {
-            revert ShoeSharkNft__OnlyBurnByTokenOwner();
+            revert ShoeSharkNft__burn__OnlyBurnByTokenOwner();
         }   
         emit ShoeSharkNft_NftBurned(msg.sender, tokenId);
         super._burn(tokenId);
 
     }
- 
+
+    /////////////////////////
+    ///     Internal      ///
+    /////////////////////////
+    //openzeppelin ERC721Enumerable
+   function _update(address to, uint256 tokenId, address auth)
+        internal
+        override(ERC721, ERC721Enumerable)
+        returns (address)
+    {
+        return super._update(to, tokenId, auth);
+    }
+
+    //openzeppelin ERC721Enumerable
+    function _increaseBalance(address account, uint128 value)
+        internal
+        override(ERC721, ERC721Enumerable)
+    {
+        super._increaseBalance(account, value);
+    }
+
     /////////////////////////
     ///     Private       ///
     /////////////////////////
@@ -185,11 +214,11 @@ contract ShoeSharkNft is ERC721URIStorage {
      */
     function _mint(address player) private returns (uint256) {
         if (s_IsMinting == false) {
-            revert ShoeSharkNft__IsMintingFalse();
+            revert ShoeSharkNft__mint__MintingIsNotAllowed();
         }
         uint256 s_tokenId = s_tokenCounter;
         if (s_tokenId > s_MintMaxTotal) {
-            revert ShoeSharkNft__TokenIdOverflow();
+            revert ShoeSharkNft__mint__TokenIdOverflow();
         }
         string memory tokenURI1 = getTokenURI(s_tokenId);
         // link the user's address with the tokenId

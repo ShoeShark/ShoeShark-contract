@@ -36,14 +36,14 @@ contract ShoeSharkToken is ERC20,Ownable(msg.sender)  {
     event ShoeSharkToken_Burned(address indexed player);
 
     constructor(uint256 initialSupply) ERC20("ShoeSharkToken", "SST") {
-        _mint(msg.sender, initialSupply);
+        mint(msg.sender, initialSupply);
     }
 
-    function mint(uint256 amount) external onlyOwner{
+    function mint(address to, uint256 amount) public onlyOwner{
         if (amount == 0) {
             revert ShoeSharkToken__InvalidMintAmount();
         }
-        _mint(msg.sender, amount);
+        _mint(to, amount);
         emit ShoeSharkToken_Minted(msg.sender);
     }
 
