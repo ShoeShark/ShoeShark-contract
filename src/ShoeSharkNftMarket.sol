@@ -77,6 +77,10 @@ contract ShoeSharkNftMarket {
 	///////////////////////////
 	///  External Functions ///
 	///////////////////////////
+	/**
+	 * @dev Buy the NFT with the given tokenId.
+	 * @param _tokenId The NFT identifier to buy
+	 */
 	function buy(uint256 _tokenId) external {
 		Order memory order = s_ordersOfId[_tokenId];
 		address seller =order.seller;
@@ -87,7 +91,7 @@ contract ShoeSharkNftMarket {
 			revert ShoeSharkNftMarket__buy__ZeroAddress();
 		}
 		NFT.safeTransferFrom(address(this), buyer, _tokenId);
-		//removeOrder(_tokenId);
+		removeOrder(_tokenId);
 		emit ShoeSharkNftMarket_Deal(seller, buyer, _tokenId, price);
 	}
 
@@ -98,7 +102,7 @@ contract ShoeSharkNftMarket {
 		}
 
 		NFT.safeTransferFrom(address(this), seller, _tokenId);
-		//removeOrder(_tokenId);
+		removeOrder(_tokenId);
 		emit ShoeSharkNftMarket_OrderCancelled(seller, _tokenId);
 
 	}
@@ -117,6 +121,14 @@ contract ShoeSharkNftMarket {
 		emit ShoeSharkNftMarket_PriceChanged(seller, _tokenId, previousPrice, _price);
 	}
 
+	/**
+	 * @dev This is the function that the NFT contract calls when safeTransferring an NFT to this contract.
+	 *      We will use this function to list the NFT for sale.
+	 * @param operator The address that called `safeTransferFrom` function
+	 * @param from The address that previously owned the token
+	 * @param tokenId The NFT identifier which is being transferred
+	 * @param data Additional data with no specified format
+	 */
 	function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) external returns (bytes4) {
 		uint256 price = toUint256(data,0);
 		if (price <=0){
@@ -171,7 +183,7 @@ contract ShoeSharkNftMarket {
 		}
 		return tempUint;
 	}
-	
+
 	//////////////////////////
 	///  internal Functions //
 	//////////////////////////

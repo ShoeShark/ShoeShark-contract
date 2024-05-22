@@ -81,7 +81,7 @@ contract ShoeSharkNft is ERC721, ERC721Enumerable, ERC721URIStorage {
     /////////////////////////
     ///     Functions     ///
     /////////////////////////
-    constructor(bytes32 merkleroot,string memory metadataUri,address tokenAddress) ERC721("ShoeShark", "SHRK") {
+    constructor(bytes32 merkleroot,string memory metadataUri) ERC721("ShoeShark", "SHRK") {
         s_owner = msg.sender;
         // start tokenIds at 1, its more gas efficient
         s_tokenCounter++;
