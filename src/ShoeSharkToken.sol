@@ -24,7 +24,7 @@ pragma solidity ^0.8.20;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ShoeSharkToken is ERC20,Ownable(msg.sender)  {
+contract ShoeSharkToken is ERC20, Ownable(msg.sender) {
     /////////////////////////
     ///     Errors        ///
     /////////////////////////
@@ -32,6 +32,7 @@ contract ShoeSharkToken is ERC20,Ownable(msg.sender)  {
     /////////////////////////
     ///     Event         ///
     /////////////////////////
+
     event ShoeSharkToken_Minted(address indexed player);
     event ShoeSharkToken_Burned(address indexed player);
 
@@ -39,14 +40,11 @@ contract ShoeSharkToken is ERC20,Ownable(msg.sender)  {
         mint(msg.sender, initialSupply);
     }
 
-    function mint(address to, uint256 amount) public onlyOwner{
+    function mint(address to, uint256 amount) public onlyOwner {
         if (amount == 0) {
             revert ShoeSharkToken__InvalidMintAmount();
         }
         _mint(to, amount);
         emit ShoeSharkToken_Minted(msg.sender);
     }
-
-    
-
 }

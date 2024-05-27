@@ -25,180 +25,188 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract ShoeSharkNftMarket {
-	/////////////////
+    /////////////////
     /// Errors //////
     /////////////////
-	error ShoeSharkNftMarket__constructor__ZeroAddress();
-	error ShoeSharkNftMarket__buy__ZeroAddress();
-	error ShoeSharkNftMarket__cancelOrder__NotSeller();
-	error ShoeSharkNftMarket__changePrice__NotSeller();
-	error ShoeSharkNftMarket__onERC721Received__PriceMustBeGreaterThanZero();
-	error ShoeSharkNftMarket__ToUint256__OutOfBounds();
-	error ShoeSharkNftMarket__ToUint256__OverFlow();
-	///////////////////////////
+    error ShoeSharkNftMarket__constructor__ZeroAddress();
+    error ShoeSharkNftMarket__buy__ZeroAddress();
+    error ShoeSharkNftMarket__cancelOrder__NotSeller();
+    error ShoeSharkNftMarket__changePrice__NotSeller();
+    error ShoeSharkNftMarket__onERC721Received__PriceMustBeGreaterThanZero();
+    error ShoeSharkNftMarket__ToUint256__OutOfBounds();
+    error ShoeSharkNftMarket__ToUint256__OverFlow();
+    ///////////////////////////
     /// Type declarations /////
     ///////////////////////////
-	struct Order {
-		uint256 tokenId;
-		uint256 price;
-		address seller;
-	}
+
+    struct Order {
+        uint256 tokenId;
+        uint256 price;
+        address seller;
+    }
     /////////////////////////
     /// State variables /////
     /////////////////////////
-	IERC20 public SST;
-	IERC721 public NFT;
-	bytes4 internal constant MAGIC_ON_ERC721_RECEIVED = 0x150b7a02;
-	mapping (uint256 => Order) public s_ordersOfId;
-	Order[] public s_orders;
-	mapping (uint256 => uint256) public s_tokenIdToOrderIndex;
+
+    IERC20 public SST;
+    IERC721 public NFT;
+    bytes4 internal constant MAGIC_ON_ERC721_RECEIVED = 0x150b7a02;
+    mapping(uint256 => Order) public s_ordersOfId;
+    Order[] public s_orders;
+    mapping(uint256 => uint256) public s_tokenIdToOrderIndex;
     /////////////////////////
     ///     Event         ///
     /////////////////////////
-	event ShoeSharkNftMarket_Deal(address indexed seller, address indexed buyer, uint256 indexed tokenId, uint256 price);
-	event ShoeSharkNftMarket_NewOrder(address indexed seller, uint256 indexed tokenId, uint256 price);
-	event ShoeSharkNftMarket_PriceChanged(address indexed seller, uint256 indexed tokenId,uint256 previousPrice, uint256 price);
-	event ShoeSharkNftMarket_OrderCancelled(address indexed seller, uint256 indexed tokenId);
+
+    event ShoeSharkNftMarket_Deal(
+        address indexed seller, address indexed buyer, uint256 indexed tokenId, uint256 price
+    );
+    event ShoeSharkNftMarket_NewOrder(address indexed seller, uint256 indexed tokenId, uint256 price);
+    event ShoeSharkNftMarket_PriceChanged(
+        address indexed seller, uint256 indexed tokenId, uint256 previousPrice, uint256 price
+    );
+    event ShoeSharkNftMarket_OrderCancelled(address indexed seller, uint256 indexed tokenId);
 
     /////////////////////////
     ///     Functions     ///
     /////////////////////////
-	constructor(address _SST, address _NFT) {
-		if (_SST == address(0) ) {
-			revert ShoeSharkNftMarket__constructor__ZeroAddress();
-		}
-		if(_NFT == address(0) ) {
-			revert ShoeSharkNftMarket__constructor__ZeroAddress();
-		}
-		SST = IERC20(_SST);
-		NFT = IERC721(_NFT);
-	}
+    constructor(address _SST, address _NFT) {
+        if (_SST == address(0)) {
+            revert ShoeSharkNftMarket__constructor__ZeroAddress();
+        }
+        if (_NFT == address(0)) {
+            revert ShoeSharkNftMarket__constructor__ZeroAddress();
+        }
+        SST = IERC20(_SST);
+        NFT = IERC721(_NFT);
+    }
 
-	///////////////////////////
-	///  External Functions ///
-	///////////////////////////
-	/**
-	 * @dev Buy the NFT with the given tokenId.
-	 * @param _tokenId The NFT identifier to buy
-	 */
-	function buy(uint256 _tokenId) external {
-		Order memory order = s_ordersOfId[_tokenId];
-		address seller =order.seller;
-		address buyer = msg.sender;
-		uint256 price = order.price;
+    ///////////////////////////
+    ///  External Functions ///
+    ///////////////////////////
+    /**
+     * @dev Buy the NFT with the given tokenId.
+     * @param _tokenId The NFT identifier to buy
+     */
+    function buy(uint256 _tokenId) external {
+        Order memory order = s_ordersOfId[_tokenId];
+        address seller = order.seller;
+        address buyer = msg.sender;
+        uint256 price = order.price;
 
-		if(!SST.transferFrom(buyer, seller, price)){
-			revert ShoeSharkNftMarket__buy__ZeroAddress();
-		}
-		NFT.safeTransferFrom(address(this), buyer, _tokenId);
-		removeOrder(_tokenId);
-		emit ShoeSharkNftMarket_Deal(seller, buyer, _tokenId, price);
-	}
+        if (!SST.transferFrom(buyer, seller, price)) {
+            revert ShoeSharkNftMarket__buy__ZeroAddress();
+        }
+        NFT.safeTransferFrom(address(this), buyer, _tokenId);
+        removeOrder(_tokenId);
+        emit ShoeSharkNftMarket_Deal(seller, buyer, _tokenId, price);
+    }
 
-	function cancelOrder(uint256 _tokenId) external {
-		address seller = s_ordersOfId[_tokenId].seller;
-		if(!(msg.sender == seller)){
-			revert ShoeSharkNftMarket__cancelOrder__NotSeller();
-		}
+    function cancelOrder(uint256 _tokenId) external {
+        address seller = s_ordersOfId[_tokenId].seller;
+        if (!(msg.sender == seller)) {
+            revert ShoeSharkNftMarket__cancelOrder__NotSeller();
+        }
 
-		NFT.safeTransferFrom(address(this), seller, _tokenId);
-		removeOrder(_tokenId);
-		emit ShoeSharkNftMarket_OrderCancelled(seller, _tokenId);
+        NFT.safeTransferFrom(address(this), seller, _tokenId);
+        removeOrder(_tokenId);
+        emit ShoeSharkNftMarket_OrderCancelled(seller, _tokenId);
+    }
 
-	}
+    function changePrice(uint256 _tokenId, uint256 _price) external {
+        address seller = s_ordersOfId[_tokenId].seller;
+        if (!(msg.sender == seller)) {
+            revert ShoeSharkNftMarket__changePrice__NotSeller();
+        }
+        uint256 previousPrice = s_ordersOfId[_tokenId].price;
+        s_ordersOfId[_tokenId].price = _price;
 
-	function changePrice(uint256 _tokenId, uint256 _price) external{
-		address seller = s_ordersOfId[_tokenId].seller;
-		if (!(msg.sender == seller)){
-			revert ShoeSharkNftMarket__changePrice__NotSeller();
-		}
-		uint256 previousPrice = s_ordersOfId[_tokenId].price;
-		s_ordersOfId[_tokenId].price = _price;
+        Order storage order = s_orders[s_tokenIdToOrderIndex[_tokenId]];
+        order.price = _price;
 
-		Order storage order = s_orders[s_tokenIdToOrderIndex[_tokenId]];
-		order.price = _price;
+        emit ShoeSharkNftMarket_PriceChanged(seller, _tokenId, previousPrice, _price);
+    }
 
-		emit ShoeSharkNftMarket_PriceChanged(seller, _tokenId, previousPrice, _price);
-	}
+    /**
+     * @dev This is the function that the NFT contract calls when safeTransferring an NFT to this contract.
+     *      We will use this function to list the NFT for sale.
+     * @param operator The address that called `safeTransferFrom` function
+     * @param from The address that previously owned the token
+     * @param tokenId The NFT identifier which is being transferred
+     * @param data Additional data with no specified format
+     */
+    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data)
+        external
+        returns (bytes4)
+    {
+        uint256 price = toUint256(data, 0);
+        if (price <= 0) {
+            revert ShoeSharkNftMarket__onERC721Received__PriceMustBeGreaterThanZero();
+        }
+        s_orders.push(Order(tokenId, price, from));
+        s_ordersOfId[tokenId] = Order(tokenId, price, from);
+        s_tokenIdToOrderIndex[tokenId] = s_orders.length - 1;
+        emit ShoeSharkNftMarket_NewOrder(from, tokenId, price);
+        return MAGIC_ON_ERC721_RECEIVED;
+    }
+    /////////////////////////
+    ///  Public Functions ///
+    /////////////////////////
+    /**
+     * @dev Returns true if the token is listed for sale.
+     */
 
-	/**
-	 * @dev This is the function that the NFT contract calls when safeTransferring an NFT to this contract.
-	 *      We will use this function to list the NFT for sale.
-	 * @param operator The address that called `safeTransferFrom` function
-	 * @param from The address that previously owned the token
-	 * @param tokenId The NFT identifier which is being transferred
-	 * @param data Additional data with no specified format
-	 */
-	function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) external returns (bytes4) {
-		uint256 price = toUint256(data,0);
-		if (price <=0){
-			revert ShoeSharkNftMarket__onERC721Received__PriceMustBeGreaterThanZero();
-		}
-		s_orders.push(Order(tokenId, price, from));
-		s_ordersOfId[tokenId] = Order(tokenId, price, from);
-		s_tokenIdToOrderIndex[tokenId] = s_orders.length - 1;
-		emit ShoeSharkNftMarket_NewOrder(from, tokenId, price);
-		return MAGIC_ON_ERC721_RECEIVED;
-	}	
-	/////////////////////////
-	///  Public Functions ///
-	/////////////////////////
-	/**
-	 * @dev Returns true if the token is listed for sale.
-	 */
-	function isListed(uint256 _tokenId) public view returns (bool) {
-		return s_ordersOfId[_tokenId].seller != address(0);
-	}
+    function isListed(uint256 _tokenId) public view returns (bool) {
+        return s_ordersOfId[_tokenId].seller != address(0);
+    }
 
-	function getOrderLength() external view returns (uint256) {
-		return s_orders.length;
-	}
+    function getOrderLength() external view returns (uint256) {
+        return s_orders.length;
+    }
 
-	function getAllNFTs() external view returns (Order[] memory) {
-		return s_orders;
-	}
+    function getAllNFTs() external view returns (Order[] memory) {
+        return s_orders;
+    }
 
-	function getMyNFTs() external view returns (Order[] memory){
-		Order[] memory myOrders = new Order[](s_orders.length);
-		uint256 count = 0;
-		for (uint256 i = 0; i < s_orders.length; i++) {
-			if (s_orders[i].seller == msg.sender) {
-				myOrders[count] = s_orders[i];
-				count++;
-			}
-		}
-		return myOrders;
-	}
+    function getMyNFTs() external view returns (Order[] memory) {
+        Order[] memory myOrders = new Order[](s_orders.length);
+        uint256 count = 0;
+        for (uint256 i = 0; i < s_orders.length; i++) {
+            if (s_orders[i].seller == msg.sender) {
+                myOrders[count] = s_orders[i];
+                count++;
+            }
+        }
+        return myOrders;
+    }
 
-	function toUint256(bytes memory _bytes, uint256 _start) public pure returns (uint256) {
-		if (_start + 32 > _bytes.length) {
-			revert ShoeSharkNftMarket__ToUint256__OutOfBounds();
-		}
-		if (_start + 32 < _start) {
-			revert ShoeSharkNftMarket__ToUint256__OverFlow();
-		}
-		uint256 tempUint;
-		assembly {
-			tempUint := mload(add(add(_bytes, 0x20), _start))
-		}
-		return tempUint;
-	}
+    function toUint256(bytes memory _bytes, uint256 _start) public pure returns (uint256) {
+        if (_start + 32 > _bytes.length) {
+            revert ShoeSharkNftMarket__ToUint256__OutOfBounds();
+        }
+        if (_start + 32 < _start) {
+            revert ShoeSharkNftMarket__ToUint256__OverFlow();
+        }
+        uint256 tempUint;
+        assembly {
+            tempUint := mload(add(add(_bytes, 0x20), _start))
+        }
+        return tempUint;
+    }
 
-	//////////////////////////
-	///  internal Functions //
-	//////////////////////////
-	function removeOrder(uint256 _tokenId) internal {
-		uint256 index = s_tokenIdToOrderIndex[_tokenId];
-		uint256 lastIndex = s_orders.length - 1;
-		if (index != lastIndex) {
-			Order memory lastOrder = s_orders[lastIndex];
-			s_orders[index] = lastOrder;
-			s_tokenIdToOrderIndex[lastOrder.tokenId] = index;
-		}
-		s_orders.pop();
-		delete s_ordersOfId[_tokenId];
-		delete s_tokenIdToOrderIndex[_tokenId];
-	}
-
+    //////////////////////////
+    ///  internal Functions //
+    //////////////////////////
+    function removeOrder(uint256 _tokenId) internal {
+        uint256 index = s_tokenIdToOrderIndex[_tokenId];
+        uint256 lastIndex = s_orders.length - 1;
+        if (index != lastIndex) {
+            Order memory lastOrder = s_orders[lastIndex];
+            s_orders[index] = lastOrder;
+            s_tokenIdToOrderIndex[lastOrder.tokenId] = index;
+        }
+        s_orders.pop();
+        delete s_ordersOfId[_tokenId];
+        delete s_tokenIdToOrderIndex[_tokenId];
+    }
 }
-
