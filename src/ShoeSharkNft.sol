@@ -79,6 +79,7 @@ contract ShoeSharkNft is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable, VR
     event ShoeSharkNft_NftMinted(address indexed player, uint256 indexed tokenId, uint256 requestId);
     event ShoeSharkNft_NftBurned(address indexed player, uint256 indexed tokenId);
     event ShoeSharkNft_Withdraw();
+    event ShoeSharkNft_tokenIdtoTokenURI(uint256 indexed tokenId, uint256 metadateIndex);
 
     /////////////////////////
     ///     Functions     ///
@@ -224,6 +225,7 @@ contract ShoeSharkNft is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable, VR
         // link the tokenId with the metadata's address
         _setTokenURI(s_tokenId, tokenURI1);
         s_IsMinting = true;
+        emit ShoeSharkNft_tokenIdtoTokenURI(s_tokenId, randomNumber);
     }
 
     /**

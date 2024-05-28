@@ -43,6 +43,7 @@ contract ShoeSharkNftMarket {
         uint256 tokenId;
         uint256 price;
         address seller;
+        string tokenUri;
     }
     /////////////////////////
     /// State variables /////
@@ -139,12 +140,13 @@ contract ShoeSharkNftMarket {
         external
         returns (bytes4)
     {
-        uint256 price = toUint256(data, 0);
+        (uint256 price, string memory tokenUri) = abi.decode(data, (uint256, string));
+        //uint256 price = toUint256(data, 0);
         if (price <= 0) {
             revert ShoeSharkNftMarket__onERC721Received__PriceMustBeGreaterThanZero();
         }
-        s_orders.push(Order(tokenId, price, from));
-        s_ordersOfId[tokenId] = Order(tokenId, price, from);
+        s_orders.push(Order(tokenId, price, from, tokenUri));
+        s_ordersOfId[tokenId] = Order(tokenId, price, from, tokenUri);
         s_tokenIdToOrderIndex[tokenId] = s_orders.length - 1;
         emit ShoeSharkNftMarket_NewOrder(from, tokenId, price);
         return MAGIC_ON_ERC721_RECEIVED;
