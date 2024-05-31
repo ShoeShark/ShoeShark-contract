@@ -24,7 +24,7 @@ contract ShoeSharkRewardPointTest is StdCheats, Test {
         sst = deployReturns.shoeSharkToken;
         shoeSharkRewardPoint = deployReturns.shoeSharkRewardPoint;
         deployerAddress = vm.addr(deployer.depolyAddress());
-        vm.prank(deployerAddress);
+        //vm.prank(deployerAddress);
     }
 
     function testTheLastTimeStampShouldBeRightAfterDeployment() public {
@@ -35,6 +35,8 @@ contract ShoeSharkRewardPointTest is StdCheats, Test {
     ///////////////////////
 
     function testSetPoints() public {
+        vm.prank(deployerAddress);
+
         uint256 points = 100;
         address[] memory accounts = new address[](1);
         accounts[0] = PLAYER;
@@ -45,34 +47,54 @@ contract ShoeSharkRewardPointTest is StdCheats, Test {
         assertEq(shoeSharkRewardPoint.getUserPoints(PLAYER), points);
     }
 
+    function testSetPointsCanOnlyBeCalledByOwner() public {
+        vm.startPrank(PLAYER);
+
+        uint256 points = 100;
+        address[] memory accounts = new address[](1);
+        accounts[0] = PLAYER;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = points;
+        vm.expectRevert();
+        shoeSharkRewardPoint.setPoints(accounts, amounts);
+        vm.stopPrank();
+    }
+
     ///////////////////////
     // performUpkeep     //
     ///////////////////////
     modifier pointsSeted() {
+        vm.prank(deployerAddress);
         uint256 points = 100;
         address[] memory accounts = new address[](1);
         accounts[0] = PLAYER;
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = points;
         shoeSharkRewardPoint.setPoints(accounts, amounts);
+        vm.warp(block.timestamp + 31);
+        vm.roll(block.number + 1);
         _;
     }
 
     function testPerformUpkeepCanOnlyRunIfCheckUpkeepIsTrue() public pointsSeted {
-        vm.prank(OWNER);
-        vm.warp(block.timestamp + 31);
-        vm.roll(block.number + 1);
-
+        vm.startPrank(OWNER);
+        // sst.approve(address(shoeSharkRewardPoint), 100);
+        console.log("sst.owner(): %s", sst.owner());
+        console.log("sst.balanceOf(OWNER);", sst.balanceOf(OWNER));
         shoeSharkRewardPoint.performUpkeep("");
+        vm.stopPrank();
     }
 
     function testPerformUpkeepUpdatesRaffleStateAndEmitsRequestId() public pointsSeted {
         // Arrange
+        vm.startPrank(OWNER);
+        //sst.approve(address(shoeSharkRewardPoint), 100);
+
         // Act
         vm.recordLogs();
         shoeSharkRewardPoint.performUpkeep(""); // emits requestId
         Vm.Log[] memory entries = vm.getRecordedLogs();
-        bytes32 requestId = entries[1].topics[2];
+        bytes32 requestId = entries[0].topics[2];
 
         // Assert
         // requestId = raffle.getLastRequestId();

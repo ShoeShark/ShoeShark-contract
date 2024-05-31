@@ -182,6 +182,10 @@ contract ShoeSharkNftMarket {
         return myOrders;
     }
 
+    function getOrder(uint256 _tokenId) public view returns (Order memory) {
+        return s_ordersOfId[_tokenId];
+    }
+
     function toUint256(bytes memory _bytes, uint256 _start) public pure returns (uint256) {
         if (_start + 32 > _bytes.length) {
             revert ShoeSharkNftMarket__ToUint256__OutOfBounds();

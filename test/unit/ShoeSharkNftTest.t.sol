@@ -116,4 +116,9 @@ contract ShoeSharkNftTest is StdCheats, Test {
         vm.expectRevert("nonexistent request");
         VRFCoordinatorV2Mock(vrfCoordinatorV2).fulfillRandomWords(1, address(shoeSharkNft));
     }
+    /////////////////////////
+    // get         //
+    ////////////////////////
+
+    function testGetter() public NftMinted {}
 }

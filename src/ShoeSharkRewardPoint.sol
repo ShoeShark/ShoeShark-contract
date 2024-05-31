@@ -177,6 +177,7 @@ contract ShoeSharkRewardPoint is Ownable(msg.sender) {
      */
     function _redeemTokens(address to, uint256 points) private {
         uint256 amount = (points + exchangeRate - 1) / exchangeRate;
+        //SST.approve(address(this), amount);
         SST.transferFrom(msg.sender, to, amount);
     }
 }
