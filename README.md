@@ -1,94 +1,67 @@
-## Foundry
+# ShoeShark-contract
 
-Foundry consists of:
+Shoe Shark aims to create a decentralized platform for sharing and exploring travel inspirations, leveraging Web3 technology. The name is inspired by the famous Chinese traveler Xu Xiake, where "Shoe" represents walking and traveling, and "Shark" symbolizes exploration and adventure. Shoe Shark encourages users to share travel experiences, inspire each other with travel ideas, and build a community centered around travel enthusiasts.
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Contracts Overview
 
-## Documentation
+The ShoeShark-contract consists of the following contracts:
 
-https://book.getfoundry.sh/
+- IntegralRewards.sol
+- ShoeSharkToken.sol
+- ShoeSharkNft.sol
+- ShoeSharkNftMarket.sol
 
-## Usage
+![Contracts Overview](./doc/image/archDiagram.png)
 
-### Build
+## Integral Rewards Contract
 
-```shell
-$ forge build
-```
+This contract defines the rules and limits for different types of user behavior, such as daily sign-ins, user interactions (likes, comments), and content publishing.
 
-### Test
+Example rules:
 
-```shell
-$ forge test
-```
+- Daily sign-in: +5 points, daily limit of 5 points.
+- User interaction: +2 points, daily limit of 10 points.
+- Content publishing: +10 points, weekly limit of 30 points.
 
-### Format
+## ShoeShark Token Contract
 
-```shell
-$ forge fmt
-```
+Basic Information:
 
-### Gas Snapshots
+- Token Name: ShoeShark Token (SST)
+- Token Symbol: SST
+- Token Type: ERC20, with 18 decimal places for consistency with most tokens on Ethereum.
+- Total Supply: Set according to project needs and token economic model. For example, 1 billion SST.
 
-```shell
-$ forge snapshot
-```
+## ShoeShark NFT Contract
 
-### Anvil
+Basic Information:
 
-```shell
-$ anvil
-```
+- NFT Name: ShoeShark NFT (SHRK)
+- Token Symbol: SHRK
+- Token Type: ERC721 NFT. Only users in the whitelist (those with points) are allowed to mint once.
 
-### Deploy
+## ShoeShark NFT Market Contract
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
+This contract is used for trading SST and SHRK. It provides functions for listing, buying, repricing, and delisting.
 
-### Cast
+## Prerequisites
 
-```shell
-$ cast <subcommand>
-```
+- Foundry
 
-### Help
+## Deployment
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+Deploy the contracts with the following commands:
+make deploy ARGS="--network fuji"
 
-# 积分合约
+Subscribe to Chainlink:
+make createSubscription ARGS="--network fuji"
 
-### **定义积分规则和上限**
+Fund the subscription:
+make fundSubscription ARGS="--network fuji"
 
-**首先，为不同类型的用户行为定义积分规则。例如，每日签到、用户互动（如点赞、评论）和内容发布等。对于每种行为，设置一个积分值以及每日或每周的积分上限。**
+## Contract Address
 
-**示例规则：**
-
-**每日签到：+5 积分，每日上限为 5 积分。用户互动：+2 积分，每日上限为 10 积分。内容发布：+10 积分，每周上限为 30 积分。**
-
-暂定为积分系统在数据库中管理, 可以通过 chianlink 服务定期获取并自动执行代币奖励分发
-
-# 平台代币合约
-
-### **基本信息**
-
-**代币名称: ShoeShark Token (SST)代币符号: SST 小数位数: 通常为 18，以便与以太坊上的大多数代币保持一致。总供应量: 根据项目需求和代币经济模型设定。例如，10 亿 SST。**
-
-积分合约
-IntegralRewards.sol
-代币合约
-ShoeSharkToken.sol
-Nft 合约
-ShoeSharkNft.sol
-
-新建 chainlink 订阅
-forge script script/Interactions.s.sol:CreateSubscription --rpc-url $FUJI_RPC_URL --private-key $PRIVATE_KEY --broadcast
-fund 订阅
-forge script script/Interactions.s.sol:FundSubscription --rpc-url $FUJI_RPC_URL --private-key $PRIVATE_KEY --broadcast
+ShoeSharkNftMarket,0x09cE8D7E2eC68C4445c8a7D1B922ebc0EFCe2366
+ShoeSharkRewardPoint,0xa5ED220f962D90Db0ea27fB677692DE08B13ddad
+ShoeSharkToken,0x9d3ce3c0E5282F71D025324312d8Bd80d082538D
+ShoeSharkNft,0x69cB35752FbA54291a96c98eE7813b4d8e82fB83
