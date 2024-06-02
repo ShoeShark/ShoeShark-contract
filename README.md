@@ -6,14 +6,14 @@ Shoe Shark aims to create a decentralized platform for sharing and exploring tra
 
 The ShoeShark-contract consists of the following contracts:
 
-- IntegralRewards.sol
+- ShoeSharkRewardPoint.sol
 - ShoeSharkToken.sol
 - ShoeSharkNft.sol
 - ShoeSharkNftMarket.sol
 
 ![Contracts Overview](./doc/image/archDiagram.png)
 
-## Integral Rewards Contract
+## ShoeShark RewardPoint Contract
 
 This contract defines the rules and limits for different types of user behavior, such as daily sign-ins, user interactions (likes, comments), and content publishing.
 
